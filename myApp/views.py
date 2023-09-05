@@ -5,12 +5,12 @@ from django.http import HttpResponse
 # Create your views here.
 
 def home(request):
-    return HttpResponse("Hello")
+    return render(request, 'myApp/dashboard.html')
 
 
 def products(request):
-    return HttpResponse("Products")
+    return render(request, 'myApp/products.html')
 
 
 def customer(request):
-    return HttpResponse("customer")
+    return render(request, 'myApp/customer.html')
