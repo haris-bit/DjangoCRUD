@@ -41,7 +41,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'myApp',
+    'graphene_django',
 ]
+
+GRAPHENE = {
+    'SCHEMA': 'myApp.schema.schema',  # Replace with your schema path
+}
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -83,6 +90,19 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'your_database_name',
+#         'USER': 'your_database_user',
+#         'PASSWORD': 'your_database_password',
+#         'HOST': 'localhost',  # Change to your PostgreSQL server hostname
+#         'PORT': '',           # Leave empty to use the default PostgreSQL port (5432)
+#     }
+# }
+
 
 
 # Password validation
