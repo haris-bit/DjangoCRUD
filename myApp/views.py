@@ -1,70 +1,40 @@
-# this is where you create all of your endpoints
-from django.http import JsonResponse
-from .models import Drink
-from .serializers import DrinkSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
+from basketball_reference_web_scraper import client
+from .serializers import AdvanceStatsSerializer  # Import your serializer
 
-
-
-from django.shortcuts import render
-from django.http import HttpResponse
-
-
-# Create your views here.
-
-@api_view(['GET', 'POST'])
-def drink_list(request, format=None):
-
+@api_view(['GET'])
+def advance_stats_list(request):
     if request.method == 'GET':
-        drinks = Drink.objects.all()
-        serializer = DrinkSerializer(drinks, many=True)
-        return Response(serializer.data)
+        try:
+            # Use the basketball_reference_web_scraper to fetch player advanced statistics data
+            player_stats = client.players_advanced_season_totals(
+                season_end_year=2022
+            )  # Replace with the desired season year
 
-    
-    if request.method == 'POST':
-       serializer = DrinkSerializer(data=request.data)
-       if serializer.is_valid():
-           serializer.save()
-           return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # Initialize an empty list to store serialized player stats
+            players_stats = []
 
+            # Deserialize and validate each player's data
+            for stats in player_stats:
+                serializer = AdvanceStatsSerializer(data=stats)
+                if serializer.is_valid():
+                    players_stats.append(serializer.data)
+                else:
+                    # Handle invalid data if needed
+                    pass
 
-@api_view(['GET', 'PUT', 'DELETE'])
-def drink_detail(request, id, format=None):
+            # Sort the data based on the specified fields in descending order
+            sorted_stats = sorted(players_stats, key=lambda x: (
+                -x.get('win_shares', 0),
+                -x.get('win_shares_per_48_minutes', 0),
+                -x.get('box_plus_minus', 0),
+                -x.get('value_over_replacement_player', 0),
+            ))
 
-    try:
-        drink = Drink.objects.get(pk=id)
-    except:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+            # Get the top 20 players
+            top_20_players = sorted_stats[:20]
 
-
-    if request.method == 'GET':
-        serializer = DrinkSerializer(drink)
-        return Response(serializer.data)
-    
-    if request.method == 'PUT':
-        serializer = DrinkSerializer(drink, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    if request.method == 'DELETE':
-        drink.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-
-
-
-def home(request):
-    return render(request, 'myApp/dashboard.html')
-
-
-def products(request):
-    return render(request, 'myApp/products.html')
-
-
-def customer(request):
-    return render(request, 'myApp/customer.html')
+            return Response(top_20_players)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=500)
