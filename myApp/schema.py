@@ -31,5 +31,6 @@ class Mutation(graphene.Mutation):
         advance_stats = AdvanceStats(**kwargs)
         advance_stats.save()
         return Mutation(advance_stats=advance_stats)
+        
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

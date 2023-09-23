@@ -1,7 +1,8 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from basketball_reference_web_scraper import client
-from .serializers import AdvanceStatsSerializer  # Import your serializer
+from .models import AdvanceStats
+from .serializers import AdvanceStatsSerializer
 
 @api_view(['GET'])
 def advance_stats_list(request):
@@ -35,6 +36,21 @@ def advance_stats_list(request):
             # Get the top 20 players
             top_20_players = sorted_stats[:20]
 
+            # Save the top 20 players' data to the database
+            for player_data in top_20_players:
+                AdvanceStats.objects.create(
+                    name=player_data['name'],
+                    minutes_played=player_data['minutes_played'],
+                    games_played=player_data['games_played'],
+                    three_point_attempt_rate=player_data['three_point_attempt_rate'],
+                    total_rebound_percentage=player_data['total_rebound_percentage'],
+                    win_shares=player_data['win_shares'],
+                    win_shares_per_48_minutes=player_data['win_shares_per_48_minutes'],
+                    box_plus_minus=player_data['box_plus_minus'],
+                    value_over_replacement_player=player_data['value_over_replacement_player']
+                )
+
+            # Return the top 20 players' data as a JSON response
             return Response(top_20_players)
         except Exception as e:
             return Response({'detail': str(e)}, status=500)
