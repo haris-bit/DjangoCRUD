@@ -7,6 +7,80 @@ import requests
 
 
 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from basketball_reference_web_scraper import client
+from .models import AdvanceStats
+from .serializers import AdvanceStatsSerializer
+import requests
+
+
+
+
+@api_view(['GET'])
+def get_player_efficiency_ratings(request, username, format=None):
+    try:
+        # Initialize an empty list for player efficiency ratings
+        player_efficiency_ratings = []
+
+        # Fetch all player advanced statistics
+        player_stats = client.players_advanced_season_totals(
+            season_end_year=2023  # Update with your desired season year
+        )
+
+        # Make a GET request to your JSON URL
+        url = "https://sheetdb.io/api/v1/3z14mlm79tmet"
+        response = requests.get(url)
+
+        # Check if the request was successful (status code 200)
+        if response.status_code == 200:
+            json_data = response.json()
+
+            # Find the record with the matching username
+            user_records = [record for record in json_data if record["Username"] == username]
+
+            if not user_records:
+                return Response({'detail': f'Username "{username}" not found in the JSON data'}, status=404)
+
+            # Ensure there's only one user with the provided username
+            if len(user_records) > 1:
+                return Response({'detail': f'Multiple users with the same username "{username}" found'}, status=400)
+
+            user_record = user_records[0]
+
+            # Loop through selected players (Who_1 to Who_20)
+            for i in range(1, 21):
+                player_name_key = f'Who_{i}'
+                player_name = user_record.get(player_name_key)
+
+                # Search for the exact player name in player_stats
+                matching_players = [stats for stats in player_stats if player_name.lower() == stats["name"].lower()]
+
+                if matching_players:
+                    # Assuming you want the first matching player
+                    player_data = matching_players[0]
+                    player_per = player_data.get('player_efficiency_rating', None)
+                    player_efficiency_ratings.append({'player_name': player_name, 'per': player_per})
+                else:
+                    # Player not found, append a placeholder
+                    player_efficiency_ratings.append({'player_name': player_name, 'per': None})
+
+            # Return the list of player efficiency ratings as a JSON response
+            return Response(player_efficiency_ratings)
+        else:
+            return Response({'detail': 'Failed to fetch JSON data'}, status=response.status_code)
+    except Exception as e:
+        return Response({'detail': str(e)}, status=500)
+
+
+
+
+
+
+
+
+
+
 
 
 @api_view(['GET'])
