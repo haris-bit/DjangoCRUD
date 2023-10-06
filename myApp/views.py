@@ -3,9 +3,92 @@ from rest_framework.response import Response
 from basketball_reference_web_scraper import client
 from .models import AdvanceStats
 from .serializers import AdvanceStatsSerializer
+import requests
+
+
+
+
 
 @api_view(['GET'])
-def advance_stats_list(request):
+def get_player_per(request, format=None):
+    if request.method == 'GET':
+        try:
+            # Make a GET request to the JSON URL
+            url = "https://sheetdb.io/api/v1/3z14mlm79tmet"
+            response = requests.get(url)
+
+            # Check if the request was successful (status code 200)
+            if response.status_code == 200:
+                json_data = response.json()
+
+                # Initialize an empty list to store player PER values
+                player_per_values = []
+
+                # Fetch all player advanced statistics
+                player_stats = client.players_advanced_season_totals(
+                    season_end_year=2023
+                )
+
+                # Loop through records and player names
+                for record in json_data:
+                    for i in range(1, 21):
+                        player_name_key = f'Who_{i}'
+                        player_name = record.get(player_name_key)
+
+                        # Search for the exact player name in player_stats
+                        matching_players = [stats for stats in player_stats if player_name.lower() == stats["name"].lower()]
+
+                        if matching_players:
+                            # Assuming you want the first matching player
+                            player_data = matching_players[0]
+                            player_per = player_data.get('player_efficiency_rating', None)
+                            player_per_values.append({'player_name': player_name, 'per': player_per})
+                        else:
+                            # Player not found, append a placeholder
+                            player_per_values.append({'player_name': player_name, 'per': None})
+
+                # Print player PER values for debugging
+                # print(player_per_values)
+
+                # Return the list of player PER values as a JSON response
+                return Response(player_per_values)
+            else:
+                return Response({'detail': 'Failed to fetch JSON data'}, status=response.status_code)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=500)
+
+
+
+
+
+
+
+
+
+
+
+# I want from whos1 to whos20
+@api_view(['GET'])
+def json_data_view(request, format=None):
+    if request.method == 'GET':
+        try:
+            # Make a GET request to the JSON URL
+            url = "https://sheetdb.io/api/v1/3z14mlm79tmet"
+            response = requests.get(url)
+            
+            # Check if the request was successful (status code 200)
+            if response.status_code == 200:
+                json_data = response.json()
+                return Response(json_data)
+            else:
+                return Response({'detail': 'Failed to fetch JSON data'}, status=response.status_code)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=500)
+
+
+
+@api_view(['GET'])
+def advance_stats_list(request, format=None):
     if request.method == 'GET':
         try:
             # Use the basketball_reference_web_scraper to fetch player advanced statistics data
@@ -47,7 +130,8 @@ def advance_stats_list(request):
                     win_shares=player_data['win_shares'],
                     win_shares_per_48_minutes=player_data['win_shares_per_48_minutes'],
                     box_plus_minus=player_data['box_plus_minus'],
-                    value_over_replacement_player=player_data['value_over_replacement_player']
+                    value_over_replacement_player=player_data['value_over_replacement_player'],
+                    player_efficiency_rating=player_data['player_efficiency_rating']
                 )
 
             # Return the top 20 players' data as a JSON response

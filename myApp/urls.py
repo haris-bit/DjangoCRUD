@@ -14,6 +14,8 @@ urlpatterns = [
     path('advance-stats/', views.advance_stats_list),
     path('graphql/', GraphQLView.as_view(graphiql=True, schema=schema)),
     # path('advance-stats/<int:pk>/', views.advance_stats_detail)
+    path('json-data/', views.json_data_view, name='json-data'),
+    path('get-player-per/', views.get_player_per, name='get-player-per'),
 ]
 
 
