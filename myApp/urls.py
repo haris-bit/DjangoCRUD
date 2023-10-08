@@ -17,6 +17,9 @@ urlpatterns = [
     path('json-data/', views.json_data_view, name='json-data'),
     path('get-player-per/', views.get_player_per, name='get-player-per'),
     path('api/player_efficiency_ratings/<str:username>/', views.get_player_efficiency_ratings, name='get_player_efficiency_ratings'),
+    # New API endpoint for the leaderboard
+    path('api/leaderboard/<str:username>/', views.leaderboard, name='leaderboard'),
+    path('api/leaderboard-list/', views.leaderboard_list, name='leaderboard_list'),
 ]
 
 
