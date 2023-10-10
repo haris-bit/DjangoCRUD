@@ -19,6 +19,10 @@ def leaderboard_list(request, format=None):
             if response.status_code == 200:
                 json_data = response.json()
 
+                # Initialize dictionaries to store player_per and sum_per_actual data
+                player_per_cache = {}  # Cache player_per data
+                sum_per_actual_cache = {}  # Cache sum_per_actual data
+
                 # Initialize a list to store leaderboard data for all users
                 leaderboard_data_list = []
 
@@ -26,56 +30,64 @@ def leaderboard_list(request, format=None):
                     username = user_data.get("Username", None)
 
                     if username:
-                        # Initialize variables to store sum PER values and correct picks count
-                        sum_per_user_submitted = 0
-                        correct_picks_count = 0
-
                         # Fetch player names from user data (Who_1 to Who_20)
                         player_names = [user_data.get(f'Who_{i}', None) for i in range(1, 21)]
 
                         # Fetch player efficiency ratings for the user
-                        player_per_api_url = f"http://127.0.0.1:8000/api/player_efficiency_ratings/{username}/"
-                        player_per_response = requests.get(player_per_api_url)
+                        if username not in player_per_cache:
+                            player_per_api_url = f"http://127.0.0.1:8000/api/player_efficiency_ratings/{username}/"
+                            player_per_response = requests.get(player_per_api_url)
 
-                        if player_per_response.status_code == 200:
-                            player_per_data = player_per_response.json()
-                            player_per_dict = {item["player_name"]: item["per"] for item in player_per_data}
+                            if player_per_response.status_code == 200:
+                                player_per_data = player_per_response.json()
+                                player_per_dict = {item["player_name"]: item["per"] for item in player_per_data}
+                                player_per_cache[username] = player_per_dict
+                            else:
+                                return Response({'detail': 'Failed to fetch player_per data'}, status=500)
 
-                            # Fetch actual player statistics using the existing API
+                        player_per_dict = player_per_cache[username]
+
+                        # Fetch actual player statistics using the existing API
+                        if "sum_per_actual" not in sum_per_actual_cache:
                             sum_per_actual_api_url = "http://127.0.0.1:8000/advance-stats/"
                             sum_per_actual_response = requests.get(sum_per_actual_api_url)
 
                             if sum_per_actual_response.status_code == 200:
                                 sum_per_actual_data = sum_per_actual_response.json()
                                 top_20_players = [item["player_efficiency_rating"] for item in sum_per_actual_data]
+                                sum_per_actual_cache["sum_per_actual"] = sum(top_20_players)
+                            else:
+                                return Response({'detail': 'Failed to fetch sum_per_actual data'}, status=500)
 
-                                # Calculate sum PER actual
-                                sum_per_actual = sum(top_20_players)
+                        sum_per_actual = sum_per_actual_cache["sum_per_actual"]
 
-                                # Compare picks with top 20 players
-                                for i, player_name in enumerate(player_names):
-                                    if player_name and player_name != 'null':
-                                        player_per = player_per_dict.get(player_name, None)
-                                        if player_per is not None:
-                                            sum_per_user_submitted += player_per
+                        # Calculate sum PER user submitted and correct picks count
+                        sum_per_user_submitted = 0
+                        correct_picks_count = 0
 
-                                        # Check if the pick matches the corresponding player in the top 20
-                                        if i < len(top_20_players) and player_per == top_20_players[i]:
-                                            correct_picks_count += 1
+                        for i, player_name in enumerate(player_names):
+                            if player_name and player_name != 'null':
+                                player_per = player_per_dict.get(player_name, None)
+                                if player_per is not None:
+                                    sum_per_user_submitted += player_per
 
-                                # Calculate Accuracy
-                                accuracy = (correct_picks_count / 20) * 100
+                                # Check if the pick matches the corresponding player in the top 20
+                                if i < len(top_20_players) and player_per == top_20_players[i]:
+                                    correct_picks_count += 1
 
-                                # Add the leaderboard data to the list
-                                leaderboard_data = {
-                                    'Username': username,
-                                    'sum_per_user_submitted': sum_per_user_submitted,
-                                    'sum_per_actual': sum_per_actual,
-                                    'per_percentage': (sum_per_user_submitted / sum_per_actual) * 100,
-                                    'correct_picks_count': correct_picks_count,
-                                    'accuracy': accuracy
-                                }
-                                leaderboard_data_list.append(leaderboard_data)
+                        # Calculate Accuracy
+                        accuracy = (correct_picks_count / 20) * 100
+
+                        # Add the leaderboard data to the list
+                        leaderboard_data = {
+                            'Username': username,
+                            'sum_per_user_submitted': sum_per_user_submitted,
+                            'sum_per_actual': sum_per_actual,
+                            'per_percentage': (sum_per_user_submitted / sum_per_actual) * 100,
+                            'correct_picks_count': correct_picks_count,
+                            'accuracy': accuracy
+                        }
+                        leaderboard_data_list.append(leaderboard_data)
 
                 # Return the list of leaderboard data as a JSON response
                 return Response(leaderboard_data_list)
@@ -94,57 +106,55 @@ def leaderboard_list(request, format=None):
 def leaderboard(request, username, format=None):
     if request.method == 'GET':
         try:
-            # Make a GET request to the JSON URL to fetch user data
+            # Make a single GET request to fetch user data and player efficiency ratings
             url = "https://sheetdb.io/api/v1/3z14mlm79tmet"
             response = requests.get(url)
 
-            # Check if the request was successful (status code 200)
             if response.status_code == 200:
-                json_data = response.json()
+                data = response.json()
 
                 # Find the user with the specified username
-                user_data = next((data for data in json_data if data["Username"] == username), None)
+                user_data = next((d for d in data if d["Username"] == username), None)
 
                 if user_data:
                     # Initialize variables to store sum PER values and correct picks count
                     sum_per_user_submitted = 0
                     correct_picks_count = 0
 
-                    # Fetch player names from user data (Who_1 to Who_20)
-                    player_names = [user_data.get(f'Who_{i}', None) for i in range(1, 21)]
+                    # Fetch actual player statistics using the existing API once
+                    sum_per_actual_api_url = "http://127.0.0.1:8000/advance-stats/"
+                    sum_per_actual_response = requests.get(sum_per_actual_api_url)
 
-                    # Fetch player efficiency ratings for the user
-                    player_per_api_url = f"http://127.0.0.1:8000/api/player_efficiency_ratings/{username}/"
-                    player_per_response = requests.get(player_per_api_url)
+                    if sum_per_actual_response.status_code == 200:
+                        sum_per_actual_data = sum_per_actual_response.json()
+                        top_20_players = [item["player_efficiency_rating"] for item in sum_per_actual_data]
 
-                    if player_per_response.status_code == 200:
-                        player_per_data = player_per_response.json()
-                        player_per_dict = {item["player_name"]: item["per"] for item in player_per_data}
+                        # Fetch player efficiency ratings for the user once
+                        player_per_api_url = f"http://127.0.0.1:8000/api/player_efficiency_ratings/{username}/"
+                        player_per_response = requests.get(player_per_api_url)
 
-                        # Fetch actual player statistics using the existing API
-                        sum_per_actual_api_url = "http://127.0.0.1:8000/advance-stats/"
-                        sum_per_actual_response = requests.get(sum_per_actual_api_url)
+                        if player_per_response.status_code == 200:
+                            player_per_data = player_per_response.json()
+                            player_per_dict = {item["player_name"]: item["per"] for item in player_per_data}
 
-                        if sum_per_actual_response.status_code == 200:
-                            sum_per_actual_data = sum_per_actual_response.json()
-                            top_20_players = [item["player_efficiency_rating"] for item in sum_per_actual_data]
+                            # Fetch player names from user data (Who_1 to Who_20)
+                            player_names = [user_data.get(f'Who_{i}', None) for i in range(1, 21)]
 
-                            # Calculate sum PER actual
-                            sum_per_actual = sum(top_20_players)
-
-                            # Compare picks with top 20 players
+                            # Calculate sum PER actual and compare picks with top 20 players
                             for i, player_name in enumerate(player_names):
-                                if player_name and player_name != 'null':
-                                    player_per = player_per_dict.get(player_name, None)
-                                    if player_per is not None:
+                                if player_name and player_name in player_per_dict:
+                                    player_per = player_per_dict[player_name]
+                                    if player_per is not None:  # Check if player_per is not None
                                         sum_per_user_submitted += player_per
 
-                                    # Check if the pick matches the corresponding player in the top 20
                                     if i < len(top_20_players) and player_per == top_20_players[i]:
                                         correct_picks_count += 1
 
                             # Calculate Accuracy
                             accuracy = (correct_picks_count / 20) * 100
+
+                            # Calculate sum PER actual once
+                            sum_per_actual = sum(top_20_players)
 
                             # Return the leaderboard data as a JSON response
                             leaderboard_data = {
@@ -165,6 +175,8 @@ def leaderboard(request, username, format=None):
                 return Response({'detail': 'Failed to fetch JSON data'}, status=response.status_code)
         except Exception as e:
             return Response({'detail': str(e)}, status=500)
+
+
 
 
 
