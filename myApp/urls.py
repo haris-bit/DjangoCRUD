@@ -20,6 +20,7 @@ urlpatterns = [
     # New API endpoint for the leaderboard
     path('api/leaderboard/<str:username>/', views.leaderboard, name='leaderboard'),
     path('api/leaderboard-list/', views.leaderboard_list, name='leaderboard_list'),
+    path('api/get_correct_picks/', views.get_correct_picks, name='get_correct_picks'),
 ]
 
 

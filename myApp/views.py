@@ -4,6 +4,147 @@ from basketball_reference_web_scraper import client
 from .models import AdvanceStats
 from .serializers import AdvanceStatsSerializer
 import requests
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+
+
+
+
+# Decorate the view with caching
+@api_view(['GET'])
+@cache_page(60 * 15)  # Cache for 15 minutes
+def get_correct_picks(request, format=None):
+    # Check if the result is already cached
+    cached_result = cache.get('correct_picks')
+    if cached_result:
+        return Response(cached_result)
+    else:
+        if request.method == 'GET':
+            try:
+                # Make a GET request to the JSON URL for user draft data
+                url = "http://localhost:8000/json-data/"
+                response = requests.get(url)
+
+                # Check if the request was successful (status code 200)
+                if response.status_code == 200:
+                    user_drafts = response.json()
+
+                    # Use the basketball_reference_web_scraper to fetch player advanced statistics data
+                    player_stats = client.players_advanced_season_totals(
+                        season_end_year=2023
+                    )  # Replace with the desired season year
+
+                    # Initialize an empty list to store serialized player stats
+                    players_stats = []
+
+                    # Deserialize and validate each player's data
+                    for stats in player_stats:
+                        serializer = AdvanceStatsSerializer(data=stats)
+                        if serializer.is_valid():
+                            players_stats.append(serializer.data)
+                        else:
+                            # Handle invalid data if needed
+                            # You can log validation errors or take other actions here
+                            pass
+
+                    # Sort the data based on the specified fields in descending order
+                    sorted_stats = sorted(players_stats, key=lambda x: (
+                        -x.get('win_shares', 0),
+                        -x.get('win_shares_per_48_minutes', 0),
+                        -x.get('box_plus_minus', 0),
+                        -x.get('value_over_replacement_player', 0),
+                    ))
+
+                    # Get the top 20 players
+                    top_20_players = sorted_stats[:20]
+
+                    # Save the top 20 players' data to the database
+                    for player_data in top_20_players:
+                        AdvanceStats.objects.create(
+                            name=player_data['name'],
+                            minutes_played=player_data['minutes_played'],
+                            games_played=player_data['games_played'],
+                            three_point_attempt_rate=player_data['three_point_attempt_rate'],
+                            total_rebound_percentage=player_data['total_rebound_percentage'],
+                            win_shares=player_data['win_shares'],
+                            win_shares_per_48_minutes=player_data['win_shares_per_48_minutes'],
+                            box_plus_minus=player_data['box_plus_minus'],
+                            value_over_replacement_player=player_data['value_over_replacement_player'],
+                            player_efficiency_rating=player_data['player_efficiency_rating']
+                        )
+
+                    # Make a GET request to the API for user-submitted players' PER
+
+                    # Initialize an empty list to store all user results
+                    correct_picks = []
+
+                    for user_draft in user_drafts:
+                        # Get user's email
+                        username = user_draft['Username']
+                        user_per_url = f"http://localhost:8000/api/player_efficiency_ratings/{username}/"
+                        user_per_response = requests.get(user_per_url)
+
+                        if user_per_response.status_code == 200:
+                            user_per_data = user_per_response.json()
+                            
+                            # Extract the PER values from the user_per_data
+                            per_values = [player['per'] for player in user_per_data if player['per'] is not None]
+
+                            # Calculate the sum of PER values
+                            per_sum = sum(per_values)
+                            print("Sum of PER values:", per_sum)
+
+                            # Calculate the PER%
+                            if per_sum > 0:
+                                per_percentage = (per_sum / sum(player['player_efficiency_rating'] for player in top_20_players)) * 100
+                                # Round the PER% to 2 decimal places
+                                per_percentage = round(per_percentage, 2)
+                            else:
+                                per_percentage = 0
+                            print("PER%:", per_percentage)
+                        else:
+                            print(f"Failed to fetch PER data for user: {username}")
+
+                        # Compare picks and calculate the correct count
+                        correct_count = 0
+                        for i in range(1, 21):
+                            user_pick = user_draft[f'Who_{i}']
+                            if user_pick == top_20_players[i - 1]['name']:
+                                correct_count += 1
+
+                        # Create an object for this user's results
+                        user_result = {
+                            'Username': username,
+                            'CorrectPicks': correct_count,
+                            'UserTotalPER': per_sum,
+                            'UserPERPercentage': per_percentage
+                        }
+
+                        # Add the user's results to the list
+                        correct_picks.append(user_result)
+
+                    # Sort the correct picks based on the CorrectPicks value
+                    correct_picks = sorted(correct_picks, key=lambda x: (-x['CorrectPicks'], -x['UserTotalPER'], -x['UserPERPercentage']))
+
+                    # Cache the result
+                    cache.set('correct_picks', correct_picks, 60 * 15)  # Cache for 15 minutes
+
+                    # Return the sorted list of correct picks as a response
+                    return Response(correct_picks)
+
+                else:
+                    return Response({'error': 'Failed to fetch user draft data from JSON endpoint'}, status=500)
+            except Exception as e:
+                return Response({'detail': str(e)}, status=500)
+
+
+
+
+
+
+
+
+
 
 
 
