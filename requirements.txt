@@ -25,4 +25,4 @@ sqlparse==0.4.4
     # via django
 urllib3==2.0.6
     # via requests
-gunicorn==20.1.1  # Replace with the desired version
+gunicorn==21.2.0  # Replace with the desired version
