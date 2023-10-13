@@ -22,7 +22,8 @@ def get_correct_picks(request, format=None):
         if request.method == 'GET':
             try:
                 # Make a GET request to the JSON URL for user draft data
-                url = "http://localhost:8000/json-data/"
+                url = "https://mybackendnba-e0bd8ae9accb.herokuapp.com/json-data/"
+
                 response = requests.get(url)
 
                 # Check if the request was successful (status code 200)
@@ -81,7 +82,7 @@ def get_correct_picks(request, format=None):
                     for user_draft in user_drafts:
                         # Get user's email
                         username = user_draft['Username']
-                        user_per_url = f"http://localhost:8000/api/player_efficiency_ratings/{username}/"
+                        user_per_url = f"https://mybackendnba-e0bd8ae9accb.herokuapp.com/api/player_efficiency_ratings/{username}/"
                         user_per_response = requests.get(user_per_url)
 
                         if user_per_response.status_code == 200:
@@ -176,7 +177,7 @@ def leaderboard_list(request, format=None):
 
                         # Fetch player efficiency ratings for the user
                         if username not in player_per_cache:
-                            player_per_api_url = f"http://127.0.0.1:8000/api/player_efficiency_ratings/{username}/"
+                            player_per_api_url = f"https://mybackendnba-e0bd8ae9accb.herokuapp.com/api/player_efficiency_ratings/{username}/"
                             player_per_response = requests.get(player_per_api_url)
 
                             if player_per_response.status_code == 200:
@@ -190,7 +191,7 @@ def leaderboard_list(request, format=None):
 
                         # Fetch actual player statistics using the existing API
                         if "sum_per_actual" not in sum_per_actual_cache:
-                            sum_per_actual_api_url = "http://127.0.0.1:8000/advance-stats/"
+                            sum_per_actual_api_url = "https://mybackendnba-e0bd8ae9accb.herokuapp.com/advance-stats/"
                             sum_per_actual_response = requests.get(sum_per_actual_api_url)
 
                             if sum_per_actual_response.status_code == 200:
@@ -263,7 +264,7 @@ def leaderboard(request, username, format=None):
                     correct_picks_count = 0
 
                     # Fetch actual player statistics using the existing API once
-                    sum_per_actual_api_url = "http://127.0.0.1:8000/advance-stats/"
+                    sum_per_actual_api_url = "https://mybackendnba-e0bd8ae9accb.herokuapp.com/advance-stats/"
                     sum_per_actual_response = requests.get(sum_per_actual_api_url)
 
                     if sum_per_actual_response.status_code == 200:
@@ -271,7 +272,7 @@ def leaderboard(request, username, format=None):
                         top_20_players = [item["player_efficiency_rating"] for item in sum_per_actual_data]
 
                         # Fetch player efficiency ratings for the user once
-                        player_per_api_url = f"http://127.0.0.1:8000/api/player_efficiency_ratings/{username}/"
+                        player_per_api_url = f"https://mybackendnba-e0bd8ae9accb.herokuapp.com/api/player_efficiency_ratings/{username}/"
                         player_per_response = requests.get(player_per_api_url)
 
                         if player_per_response.status_code == 200:
