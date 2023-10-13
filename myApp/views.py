@@ -10,6 +10,7 @@ from django.views.decorators.cache import cache_page
 
 
 
+
 # Decorate the view with caching
 @api_view(['GET'])
 @cache_page(60 * 15)  # Cache for 15 minutes
