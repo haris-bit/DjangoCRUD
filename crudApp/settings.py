@@ -68,22 +68,22 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 
-
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",  # Allow your local development server
-#     "https://nba-rosy.vercel.app/",
-#     # "https://yourproductiondomain.com",  # Add your production domain here
-# ]
-
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_ALLOW_ALL = False
 
-
-
-CORS_ORIGIN_WHITELIST = [
-    "http://localhost:3000",
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Allow your local development server
     "https://nba-rosy.vercel.app",
+    # "https://yourproductiondomain.com",  # Add your production domain here
 ]
+
+
+
+
+# CORS_ORIGIN_WHITELIST = [
+#     "http://localhost:3000",
+#     "https://nba-rosy.vercel.app",
+# ]
 
 
 
