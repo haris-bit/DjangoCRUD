@@ -77,6 +77,9 @@ CORS_ALLOWED_ORIGINS = [
     # "https://yourproductiondomain.com",  # Add your production domain here
 ]
 
+CORS_ALLOW_HEADERS = '*' # <-------- this
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000/"] # (Api Base Url) <-------- this (allow csrf_token) for doing whitelist
+
 
 
 

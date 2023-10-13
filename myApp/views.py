@@ -12,6 +12,101 @@ from django.views.decorators.http import require_http_methods
 
 
 
+@api_view(["GET"])
+@require_http_methods(["GET"])
+def user_data(request, username, format=None):
+    if request.method == 'GET':
+        try:
+            # Make a GET request to the JSON URL for user draft data
+            url = "https://mybackendnba-e0bd8ae9accb.herokuapp.com/json-data/"
+            response = requests.get(url)
+
+            if response.status_code == 200:
+                user_drafts = response.json()
+
+                # Find the user with the specified username
+                user_data = next((user for user in user_drafts if user['Username'] == username), None)
+
+                if user_data:
+                    # Use the basketball_reference_web_scraper to fetch player advanced statistics data
+                    player_stats = client.players_advanced_season_totals(season_end_year=2023)
+
+                    # Initialize an empty list to store serialized player stats
+                    players_stats = []
+
+                    # Deserialize and validate each player's data
+                    for stats in player_stats:
+                        serializer = AdvanceStatsSerializer(data=stats)
+                        if serializer.is_valid():
+                            players_stats.append(serializer.data)
+
+                    # Sort the data based on the specified fields in descending order
+                    sorted_stats = sorted(players_stats, key=lambda x: (
+                        -x.get('win_shares', 0),
+                        -x.get('win_shares_per_48_minutes', 0),
+                        -x.get('box_plus_minus', 0),
+                        -x.get('value_over_replacement_player', 0),
+                    ))
+
+                    # Get the top 20 players
+                    top_20_players = sorted_stats[:20]
+
+                    # Fetch the user's player efficiency ratings
+                    user_per_url = f"https://mybackendnba-e0bd8ae9accb.herokuapp.com/api/player_efficiency_ratings/{username}/"
+                    user_per_response = requests.get(user_per_url)
+
+                    if user_per_response.status_code == 200:
+                        user_per_data = user_per_response.json()
+
+                        # Extract the PER values from the user_per_data
+                        per_values = [player['per'] for player in user_per_data if player['per'] is not None]
+
+                        # Calculate the sum of PER values
+                        per_sum = sum(per_values)
+
+                        # Calculate the PER%
+                        if per_sum > 0:
+                            per_percentage = (per_sum / sum(player['player_efficiency_rating'] for player in top_20_players)) * 100
+                            per_percentage = round(per_percentage, 2)
+                        else:
+                            per_percentage = 0
+
+                        # Compare picks and calculate the correct count
+                        correct_count = 0
+                        for i in range(1, 21):
+                            user_pick = user_data.get(f'Who_{i}', None)
+                            if user_pick == top_20_players[i - 1]['name']:
+                                correct_count += 1
+
+                        user_result = {
+                            'Username': username,
+                            'CorrectPicks': correct_count,
+                            'UserTotalPER': per_sum,
+                            'UserPERPercentage': per_percentage
+                        }
+
+                        return Response(user_result)
+
+                    else:
+                        error_message = f'Failed to fetch PER data for user: {username}'
+                        print(error_message)
+                        return Response({'error': error_message}, status=500)
+
+                else:
+                    return Response({'error': 'User not found'}, status=404)
+
+            else:
+                return Response({'error': 'Failed to fetch user draft data from JSON endpoint'}, status=500)
+        except Exception as e:
+            error_message = f'An error occurred: {str(e)}'
+            print(error_message)
+            return Response({'detail': error_message}, status=500)
+
+
+
+
+
+
 
 # Decorate the view with caching
 @require_http_methods(["GET", "OPTIONS"])  # Allow GET and OPTIONS requests
