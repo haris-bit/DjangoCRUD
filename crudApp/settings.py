@@ -69,7 +69,20 @@ MIDDLEWARE = [
 ]
 
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Allow your local development server
+    # "https://yourproductiondomain.com",  # Add your production domain here
+]
+
+
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+]
+
 
 ROOT_URLCONF = 'crudApp.urls'
 
