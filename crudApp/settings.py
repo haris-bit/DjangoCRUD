@@ -68,8 +68,10 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_ALLOW_ALL = False
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = '*' # <-------- this
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000/"] # (Api Base Url) <-------- this (allow csrf_token) for doing whitelist
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Allow your local development server
@@ -77,8 +79,6 @@ CORS_ALLOWED_ORIGINS = [
     # "https://yourproductiondomain.com",  # Add your production domain here
 ]
 
-CORS_ALLOW_HEADERS = '*' # <-------- this
-CSRF_TRUSTED_ORIGINS = ["http://localhost:3000/"] # (Api Base Url) <-------- this (allow csrf_token) for doing whitelist
 
 
 
