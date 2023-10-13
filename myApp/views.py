@@ -15,6 +15,7 @@ from django.views.decorators.http import require_http_methods
 
 # Decorate the view with caching
 @require_http_methods(["GET", "OPTIONS"])  # Allow GET and OPTIONS requests
+@api_view(["GET"])
 @cache_page(60 * 15)  # Cache for 15 minutes
 def get_correct_picks(request, format=None):
     # Check if the result is already cached
@@ -153,6 +154,7 @@ def get_correct_picks(request, format=None):
 
 
 @require_http_methods(["GET", "OPTIONS"])  # Allow GET and OPTIONS requests
+@api_view(["GET"])
 def leaderboard_list(request, format=None):
     if request.method == 'GET':
         try:
@@ -248,6 +250,7 @@ def leaderboard_list(request, format=None):
 
 
 @require_http_methods(["GET", "OPTIONS"])  # Allow GET and OPTIONS requests
+@api_view(["GET"])
 def leaderboard(request, username, format=None):
     if request.method == 'GET':
         try:
@@ -328,6 +331,7 @@ def leaderboard(request, username, format=None):
 
 
 @require_http_methods(["GET", "OPTIONS"])  # Allow GET and OPTIONS requests
+@api_view(["GET"])
 def get_player_efficiency_ratings(request, username, format=None):
     try:
         # Initialize an empty list for player efficiency ratings
@@ -394,6 +398,7 @@ def get_player_efficiency_ratings(request, username, format=None):
 
 
 @require_http_methods(["GET", "OPTIONS"])  # Allow GET and OPTIONS requests
+@api_view(["GET"])
 def get_player_per(request, format=None):
     if request.method == 'GET':
         try:
@@ -453,6 +458,7 @@ def get_player_per(request, format=None):
 
 # I want from whos1 to whos20
 @require_http_methods(["GET", "OPTIONS"])  # Allow GET and OPTIONS requests
+@api_view(["GET"])
 def json_data_view(request, format=None):
     if request.method == 'GET':
         try:
@@ -472,6 +478,7 @@ def json_data_view(request, format=None):
 
 
 @require_http_methods(["GET", "OPTIONS"])  # Allow GET and OPTIONS requests
+@api_view(["GET"])
 def advance_stats_list(request, format=None):
     if request.method == 'GET':
         try:
