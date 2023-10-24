@@ -573,7 +573,7 @@ def json_data_view(request, format=None):
 
 
 @require_http_methods(["GET", "OPTIONS"])  # Allow GET and OPTIONS requests
-@api_view(["GET"])
+@api_view(['GET'])
 def advance_stats_list(request, format=None):
     if request.method == 'GET':
         try:
@@ -596,10 +596,10 @@ def advance_stats_list(request, format=None):
 
             # Sort the data based on the specified fields in descending order
             sorted_stats = sorted(players_stats, key=lambda x: (
-                -x.get('win_shares', 0),
-                -x.get('win_shares_per_48_minutes', 0),
-                -x.get('box_plus_minus', 0),
-                -x.get('value_over_replacement_player', 0),
+                # sort with player efficiency rating only if it exists
+                -x['player_efficiency_rating']
+                if x['player_efficiency_rating'] is not None
+                else -1000,
             ))
 
             # Get the top 20 players
