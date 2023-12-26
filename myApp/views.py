@@ -1,3 +1,4 @@
+from  django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from basketball_reference_web_scraper import client
@@ -9,7 +10,9 @@ from django.views.decorators.cache import cache_page
 from django.http import HttpResponse
 from django.views.decorators.http import require_http_methods
 
-
+# Create your views here.
+def home(request):
+    return render(request, 'myApp/index.html')
 
 
 @api_view(["GET"])

@@ -6,7 +6,7 @@ from .schema import schema
 
 
 urlpatterns = [
-    # path('', views.home),
+    path('', views.home),
     # path('products/', views.products),
     # path('customer/', views.customer),
     # path('drinks/', views.drink_list),
